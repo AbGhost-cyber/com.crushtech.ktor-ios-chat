@@ -1,22 +1,16 @@
 package com.example.plugins
 
-import com.example.User
+import com.example.Connection
 import io.ktor.serialization.kotlinx.*
 import io.ktor.server.application.*
-import io.ktor.server.request.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
-import io.ktor.websocket.serialization.*
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.consumeAsFlow
-import java.io.Serial
-import java.time.Duration
-import java.util.Collections
-import java.util.LinkedHashSet
-import java.util.concurrent.atomic.AtomicInteger
-import kotlinx.serialization.Serializable
+import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.Json
+import java.time.Duration
+import java.util.*
 
 fun Application.configureSockets() {
     install(WebSockets) {
@@ -27,67 +21,41 @@ fun Application.configureSockets() {
         contentConverter = KotlinxWebsocketSerializationConverter(Json)
     }
     routing {
-        val connections = Collections.synchronizedSet<Connection?>(LinkedHashSet())
-        webSocket("/chat") {
-            println("Adding user")
-            val user = call.receive<User>()
-            val thisConnection = Connection(user.name, this)
-            connections.add(thisConnection)
+        val users = Collections.synchronizedSet<Connection?>(LinkedHashSet())
+        webSocket("/chat{username?}") {
+            val userName = call.parameters["username"]
+                ?: return@webSocket call.respond("must have a name")
+            val thisConnection = Connection(userName, this)
             try {
-                send("You are connected! there are ${connections.size} people in the chat")
-//                for (frame in incoming) {
-//                    frame as? Frame.Text ?: continue
-//                    val receivedText = user.text
-//                    val textWithUsername = "[${thisConnection.name}]: $receivedText"
-//                    connections.forEach {
-//                        if (it == thisConnection) {
-//                            send("me: $receivedText")
-//                        } else {
-//                            it.session.send(textWithUsername)
-//                        }
-//                    }
-//                }
-                while (true) {
-                    val incoming = receiveDeserialized<User>()
-                    val textWithUsername = "[${thisConnection.name}]: ${incoming.text}"
-                    connections.forEach {
-                        if (it == thisConnection) {
-                            send("me: ${incoming.text}")
-                        } else {
-                            it.session.send(textWithUsername)
+                if (userName.isBlank() || userName.isEmpty() || userName == "") return@webSocket print("invalid $userName")
+                val isInGroupAlready = users.any { it.name == userName }
+                if (!isInGroupAlready) {
+                    users.add(thisConnection)
+                }
+
+                if (thisConnection.session.isActive) {
+                    send("You're connected, ${users.count()} people in chat")
+                    users.forEach {
+                        it.session.send("$userName joined the chat!")
+                    }
+                    for (frame in incoming) {
+                        val message = frame as? Frame.Text ?: continue
+                        users.forEach {
+                            val sentText = "[$userName]: ${message.readText()}"
+                            if (it == thisConnection) {
+                                it.session.send("me: ${message.readText()}")
+                            } else {
+                                it.session.send(sentText)
+                            }
                         }
                     }
                 }
-            } catch (e: Exception) {
+            } catch (e:Exception) {
                 println(e.localizedMessage)
             } finally {
-                println("remobing")
-                connections.remove(thisConnection)
-            }
-        }
-        val connection = Collections.synchronizedSet<Connection?>(LinkedHashSet())
-        webSocket("/chats") {
-            val user = receiveDeserialized<User>()
-            val currentConnection = Connection(user.name, this)
-            connection.add(currentConnection)
-            try {
-                sendSerialized("you're connected!")
-                for (frame in incoming) {
-                    frame as? Frame.Text ?: continue
-                    val receivedText = frame.readText()
-                    val textWithUsername = "[${currentConnection.name}]: $receivedText"
-                    connections.forEach {
-                        it.session.send(textWithUsername)
-                    }
-                }
-            } catch (e: Exception) {
-                println(e.localizedMessage)
-            } finally {
-                println("removing")
-                connections.remove(currentConnection)
+                println("removing user")
+                users -=thisConnection
             }
         }
     }
 }
-
-data class Connection(val name: String, val session: DefaultWebSocketServerSession)

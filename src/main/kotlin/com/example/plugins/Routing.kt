@@ -1,6 +1,5 @@
 package com.example.plugins // ktlint-disable filename
 
-import com.example.User
 import io.ktor.server.application.* // ktlint-disable no-wildcard-imports
 import io.ktor.server.request.*
 import io.ktor.server.response.* // ktlint-disable no-wildcard-imports
