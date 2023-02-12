@@ -1,12 +1,13 @@
 package com.example.plugins
 
 import com.example.Connection
+import com.example.Message
+import io.ktor.serialization.*
 import io.ktor.serialization.kotlinx.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
-import io.ktor.websocket.*
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.Json
 import java.time.Duration
@@ -22,6 +23,22 @@ fun Application.configureSockets() {
     }
     routing {
         val users = Collections.synchronizedSet<Connection?>(LinkedHashSet())
+
+        webSocket("/leave{username?}") {
+            val userName = call.parameters["username"]
+                ?: return@webSocket call.respond("must have a name")
+            if (users.any { it.name == userName }) {
+                try {
+                    val thisUser = users.find { it.name == userName }!!
+                    users -= thisUser
+                    users.forEach {
+                        it.session.sendSerialized(Message(message = "${thisUser.name} left the chat"))
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
         webSocket("/chat{username?}") {
             val userName = call.parameters["username"]
                 ?: return@webSocket call.respond("must have a name")
@@ -34,27 +51,22 @@ fun Application.configureSockets() {
                 }
 
                 if (thisConnection.session.isActive) {
-                    send("You're connected, ${users.count()} people in chat")
+                    sendSerialized(Message(message = "welcome to the chat!, there are ${users.count()} people in the chat"))
                     users.forEach {
-                        it.session.send("$userName joined the chat!")
+                        it.session.sendSerialized(Message(message = "$userName joined the chat!"))
                     }
                     for (frame in incoming) {
-                        val message = frame as? Frame.Text ?: continue
                         users.forEach {
-                            val sentText = "[$userName]: ${message.readText()}"
-                            if (it == thisConnection) {
-                                it.session.send("me: ${message.readText()}")
-                            } else {
-                                it.session.send(sentText)
-                            }
+                            val incomingMessage = it.session.converter?.deserialize<Message>(frame)
+                            it.session.sendSerialized(incomingMessage)
                         }
                     }
                 }
-            } catch (e:Exception) {
+            } catch (e: Exception) {
                 println(e.localizedMessage)
             } finally {
-                println("removing user")
-                users -=thisConnection
+                println("removing user ${thisConnection.name}")
+                users -= thisConnection
             }
         }
     }
