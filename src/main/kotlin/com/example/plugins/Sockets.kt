@@ -32,7 +32,10 @@ fun Application.configureSockets() {
                     val thisUser = users.find { it.name == userName }!!
                     users -= thisUser
                     users.forEach {
-                        it.session.sendSerialized(Message(message = "${thisUser.name} left the chat"))
+                        it.session.apply {
+                            sendSerialized(Message(message = "${thisUser.name} left the chat"))
+                            sendSerialized(users.count())
+                        }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -51,9 +54,14 @@ fun Application.configureSockets() {
                 }
 
                 if (thisConnection.session.isActive) {
-                    sendSerialized(Message(message = "welcome to the chat!, there are ${users.count()} people in the chat"))
+                    sendSerialized(
+                        Message(message = "welcome to the chat!, there are ${users.count()} people in the chat")
+                    )
                     users.forEach {
-                        it.session.sendSerialized(Message(message = "$userName joined the chat!"))
+                        it.session.apply {
+                            sendSerialized(Message(message = "$userName joined the chat!"))
+                            sendSerialized(users.count())
+                        }
                     }
                     for (frame in incoming) {
                         users.forEach {
