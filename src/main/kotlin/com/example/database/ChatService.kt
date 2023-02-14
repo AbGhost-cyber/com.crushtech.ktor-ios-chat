@@ -16,11 +16,31 @@ interface ChatService {
     // suspend fun fetch
 }
 
+/*
+ to create and manage the group there must be an admin, process listed below:
+ 1. admin must create a random symmetric key
+ 2. admin must send this key to each recipient of the group via asymmetric encryption
+ 3. all further messages will then be encrypted and decrypted using this key
+ 4. if a new party joins the group then send to
+ 5. if party leaves then regenerate step 1
+ let say admin generates random key 24
+ */
+
 fun main() {
-    val primeNumbers = sieveOfEratosthenes(5000)
-    val p = primeNumbers.random()
-    val availableRoots = (0 until p).filter { isPrimitive(it, p) }
-    println("$p has ${availableRoots.count()} primitive roots: $availableRoots")
+    // val primeNumbers = sieveOfEratosthenes(5000)
+    // val p = primeNumbers.random()
+    // val availableRoots = (0 until p).filter { isPrimitive(it, p) }
+    //println("$p has ${availableRoots.count()} primitive roots: $availableRoots")
+    val p1 = 7;
+    val q = 19
+    val n = p1 * q
+    val totient = 6 * 18
+    val publicKey = 29
+    val privateKey = 41
+    val plainText = 99
+    //formula for encryption = PLAINTEXT^PUBLIC KEY MOD PRODUCT
+    val encrypted = BigDecimal(99).pow(publicKey).remainder(BigDecimal(n))
+    println(encrypted)
 }
 
 
@@ -36,7 +56,6 @@ fun isPrimitive(number: Int, prime: Int): Boolean {
     }
     return true
 }
-
 
 
 /*
