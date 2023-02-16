@@ -1,8 +1,9 @@
 package com.example
 
+import com.example.database.ChatService
+import com.example.database.ChatServiceImpl
 import com.example.plugins.configureRouting
 import com.example.plugins.configureSerialization
-import com.example.plugins.configureSockets
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
@@ -14,10 +15,11 @@ fun main() {
 }
 
 fun Application.module() {
+    val service: ChatService = ChatServiceImpl()
     install(DefaultHeaders) {
 
     }
     configureSerialization()
-    configureRouting()
-    configureSockets()
+    configureRouting(service = service)
+    // configureSockets()
 }
