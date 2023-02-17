@@ -1,10 +1,13 @@
 package com.example.database.models
 
+import com.example.database.models.request.JoinGroupRequest
+import com.example.database.models.response.GroupResponse
+import com.example.database.models.response.MessageDTO
 import io.ktor.server.websocket.*
-import kotlinx.serialization.Serializable
-import java.util.*
+import org.bson.codecs.pojo.annotations.BsonId
+import org.bson.types.ObjectId
 
-@Serializable
+
 data class Group(
     val adminId: String,
     val groupId: String,
@@ -12,41 +15,60 @@ data class Group(
     val groupDesc: String,
     val groupUrl: String,
     val dateCreated: Long,
-    val users: List<User>,
-    var requests: List<User>,
-    //for kmongo smh 🤡
-    val _id: String = UUID.randomUUID().toString()
-)
+    val users: List<String>,
+    var requests: List<GroupJoinReq>,
+    var messages: List<Message>,
+    @BsonId val id: ObjectId = ObjectId()
+) {
+    fun toGroupResponse(isAdmin: Boolean): GroupResponse {
+        return GroupResponse(
+            adminId = this.adminId,
+            groupId = this.groupId,
+            groupName = this.groupName,
+            groupDesc = this.groupDesc,
+            groupUrl = this.groupUrl,
+            dateCreated = this.dateCreated,
+            users = this.users,
+            requests = if (isAdmin) this.requests.map { it.toJoinGroupDTO() } else listOf(),
+            messages = this.messages.map { it.toDTO() },
+            id = this.id.toString()
+        )
+    }
+}
 
-@Serializable
-data class CreateGroupRequest(val name: String, val desc: String, val userId: String)
+data class GroupJoinReq(
+    val username: String,
+    val publicKey: String,
+    @BsonId val id: ObjectId = ObjectId()
+) {
+    fun toJoinGroupDTO(): JoinGroupRequest {
+        return JoinGroupRequest(
+            username, publicKey
+        )
+    }
+}
 
-@Serializable
-data class JoinGroupRequest(val user: User, val publicKey: String)
-
-@Serializable
-data class FetchUserGroupsRequest(val name: String, val password: String)
-
-@Serializable
 data class User(
     val username: String,
     val password: String,
-    val userId: String, val _id: String = UUID.randomUUID().toString()
+    @BsonId val id: ObjectId = ObjectId(),
+    val salt: String
 )
 
-@Serializable
 data class Message(
-    val name: String? = null,
+    val name: String,
     val message: String,
-    val id: String = UUID.randomUUID().toString()
-)
+    @BsonId val id: ObjectId = ObjectId()
+) {
+    fun toDTO(): MessageDTO {
+        return MessageDTO(name, message, id.toString())
+    }
+}
 
-@Serializable
 data class UserIds(
-    val userId: String,
     var value: Int,
-    val _id: String = UUID.randomUUID().toString()
+    @BsonId val id: ObjectId = ObjectId()
 )
 
-data class ActiveUsers(val userId: String, val session: DefaultWebSocketServerSession)
+data class ActiveUser(val username: String, val session: DefaultWebSocketServerSession)
 

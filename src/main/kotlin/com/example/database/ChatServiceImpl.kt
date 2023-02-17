@@ -1,7 +1,8 @@
 package com.example.database
 
 import com.example.database.models.*
-import io.ktor.server.websocket.*
+import kotlinx.coroutines.isActive
+import org.bson.types.ObjectId
 import org.litote.kmongo.contains
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.eq
@@ -15,7 +16,7 @@ class ChatServiceImpl : ChatService {
     private val client = KMongo.createClient().coroutine
 
     //this field holds all online users
-    var onlineUsers = Collections.synchronizedSet<ActiveUsers?>(LinkedHashSet())
+    private var onlineUsers = Collections.synchronizedSet<ActiveUser?>(LinkedHashSet())
 
     //databases
     private val database = client.getDatabase("chat_db")
@@ -24,8 +25,11 @@ class ChatServiceImpl : ChatService {
     private val groups = database.getCollection<Group>()
     private val users = database.getCollection<User>()
     private val userIds = database.getCollection<UserIds>()
-    override suspend fun createGroup(group: Group): Boolean {
-        if (groupExists(group.groupId)) return false
+
+    override suspend fun upsertGroup(group: Group): Boolean {
+        if (groupExists(group.groupId)) {
+            return groups.updateOneById(group.id, group).wasAcknowledged()
+        }
         return groups.insertOne(group).wasAcknowledged()
     }
 
@@ -34,27 +38,38 @@ class ChatServiceImpl : ChatService {
         return groups.find().toList()
     }
 
-    override suspend fun register(username: String, password: String): Boolean {
-        if (userExist(username)) return false
-        return users.insertOne(
-            User(username, password, UUID.randomUUID().toString())
-        ).wasAcknowledged()
+    override suspend fun register(user: User): Boolean {
+        if (userExist(user.username)) return false
+        return users.insertOne(user).wasAcknowledged()
     }
 
-    override suspend fun addUserToActive(userId: String, session: DefaultWebSocketServerSession) {
-        val user = getUserById(userId) ?: return
-        val activeUser = ActiveUsers(user.userId, session)
-        onlineUsers.plusAssign(activeUser)
+    override suspend fun addUserToActive(activeUser: ActiveUser) {
+        if (!userExist(activeUser.username)) return
+        if (onlineUsers.find { it.username == activeUser.username } == null)
+            onlineUsers.plusAssign(activeUser)
     }
 
-    override suspend fun removeUserFromActive(userId: String) {
-        val user = getUserById(userId) ?: return
-        val activeUser = onlineUsers.find { it.userId == user.userId } ?: return
+    override suspend fun getActiveUserByName(username: String): ActiveUser? {
+        return onlineUsers.find { it.username == username }
+    }
+
+    override suspend fun getActiveUsers(): Set<ActiveUser> {
+        return onlineUsers
+    }
+
+    override suspend fun userIsOnline(username: String): Boolean {
+        if (!userExist(username)) {
+            return false
+        }
+        val activeUser = onlineUsers.find { it.username == username } ?: return false
+
+        return activeUser.session.isActive
+    }
+
+    override suspend fun removeUserFromActive(username: String) {
+        val user = getUserByName(username) ?: return
+        val activeUser = onlineUsers.find { it.username == user.username } ?: return
         onlineUsers.minusAssign(activeUser)
-    }
-
-    override suspend fun login(username: String, password: String) {
-        TODO("Not yet implemented")
     }
 
     override suspend fun groupExists(groupId: String): Boolean {
@@ -73,12 +88,12 @@ class ChatServiceImpl : ChatService {
         return users.findOne(User::username eq userName)
     }
 
-    override suspend fun getUserById(userId: String): User? {
-        return users.findOne(User::userId eq userId)
+    override suspend fun getUserById(id: ObjectId): User? {
+        return users.findOneById(id)
     }
 
-    override suspend fun getUserGroups(user: User): List<Group> {
-        if (!userExist(user.username)) return emptyList()
+    override suspend fun getUserGroups(user: String): List<Group> {
+        if (!userExist(user)) return emptyList()
         return groups.find(
             Group::users contains user
         ).toList()
@@ -90,13 +105,13 @@ class ChatServiceImpl : ChatService {
 
     override suspend fun getIdForGroup(): Int {
         val userIdList = userIds.find().toList()
-        var lastId = UserIds(UUID.randomUUID().toString(), 0)
+        var lastId = UserIds(value = 0)
         if (userIdList.isEmpty()) {
             userIds.insertOne(lastId)
         } else {
             lastId = userIdList[0]
             lastId.value = AtomicInteger(lastId.value).incrementAndGet()
-            userIds.updateOneById(lastId._id, lastId)
+            userIds.updateOneById(lastId.id, lastId)
         }
         return AtomicInteger(lastId.value).incrementAndGet()
     }

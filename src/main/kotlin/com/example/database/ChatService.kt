@@ -1,32 +1,39 @@
 package com.example.database
 
+import com.example.database.models.ActiveUser
 import com.example.database.models.Group
 import com.example.database.models.Message
 import com.example.database.models.User
-import io.ktor.server.websocket.*
+import org.bson.types.ObjectId
 
 
 interface ChatService {
-    suspend fun createGroup(group: Group): Boolean
+    suspend fun upsertGroup(group: Group): Boolean
 
     suspend fun fetchAllGroups(): List<Group>
-    suspend fun register(username: String, password: String): Boolean
-    suspend fun login(username: String, password: String)
+    suspend fun register(user: User): Boolean
 
     suspend fun groupExists(groupId: String): Boolean
     suspend fun userExist(username: String): Boolean
 
     suspend fun getGroupById(groupId: String): Group?
     suspend fun getUserByName(userName: String): User?
-    suspend fun getUserById(userId: String): User?
-    suspend fun getUserGroups(user: User): List<Group>
+    suspend fun getUserGroups(user: String): List<Group>
+
+    suspend fun getActiveUsers(): Set<ActiveUser>
 
     suspend fun getIdForGroup(): Int
 
     suspend fun fetchMessagesForGroup(groupId: String): List<Message>
 
-    suspend fun addUserToActive(userId: String, session: DefaultWebSocketServerSession)
-    suspend fun removeUserFromActive(userId: String)
+    suspend fun addUserToActive(activeUser: ActiveUser)
+
+
+    suspend fun userIsOnline(username: String): Boolean
+
+    suspend fun getActiveUserByName(username: String): ActiveUser?
+    suspend fun removeUserFromActive(username: String)
+    suspend fun getUserById(id: ObjectId): User?
 }
 
 
