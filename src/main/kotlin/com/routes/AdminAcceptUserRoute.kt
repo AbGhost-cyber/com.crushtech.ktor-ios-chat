@@ -1,6 +1,8 @@
 package com.routes
 
 import com.example.database.ChatService
+import com.example.database.models.request.GroupAcceptResponse
+import com.example.database.models.response.WebSocketResponse
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -21,6 +23,9 @@ fun Route.adminAcceptUserRoute(chatService: ChatService) {
             )
             val userToBeAdded = call.parameters["of"]
                 ?: return@post call.respond(HttpStatusCode.BadRequest, "username to be added must not be empty")
+
+            val credentials = kotlin.runCatching { call.receiveNullable<GroupAcceptResponse>() }.getOrNull()
+                ?: kotlin.run { return@post call.respond(HttpStatusCode.BadRequest, "must have credentials") }
 
             val principal = call.principal<JWTPrincipal>()
 
@@ -52,11 +57,22 @@ fun Route.adminAcceptUserRoute(chatService: ChatService) {
             val getAddedUserGroups = chatService.getUserGroups(userToBeAdded).map {
                 it.toGroupResponse(it.adminId == userId)
             }
+            //persist admin encrypted response in user's collection, it can't be decrypted by anyone except the user
+            chatService.upsertUserEncryptedGKey(credentials.toDomain())
+            //success
+            call.respond(HttpStatusCode.OK, "User added to group")
+
             val activeUser = chatService.getActiveUserByName(userToBeAdded) ?: return@post
             //send group secret to user
-            activeUser.session.sendSerialized(credentials)
+            activeUser.session.sendSerialized(
+                WebSocketResponse
+                    .UserJoinAcceptAdmin(accept = credentials)
+            )
             //update user's groups
-            activeUser.session.sendSerialized(getAddedUserGroups)
+            activeUser.session.sendSerialized(
+                WebSocketResponse
+                    .ListGroupResponse(groupList = getAddedUserGroups)
+            )
         }
     }
 }

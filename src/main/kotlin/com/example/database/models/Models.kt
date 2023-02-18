@@ -1,5 +1,6 @@
 package com.example.database.models
 
+import com.example.database.models.request.GroupAcceptResponse
 import com.example.database.models.request.JoinGroupRequest
 import com.example.database.models.response.GroupResponse
 import com.example.database.models.response.MessageDTO
@@ -38,13 +39,24 @@ data class Group(
 
 data class GroupJoinReq(
     val username: String,
-    val publicKey: String,
+    val publicKey: List<Int>,
     @BsonId val id: ObjectId = ObjectId()
 ) {
     fun toJoinGroupDTO(): JoinGroupRequest {
         return JoinGroupRequest(
             username, publicKey
         )
+    }
+}
+
+data class GroupAccept(
+    val username: String,
+    val groupId: String,
+    val publicKey: List<Int>,
+    @BsonId val id: ObjectId = ObjectId()
+) {
+    fun toDTO(): GroupAcceptResponse {
+        return GroupAcceptResponse(username, groupId, publicKey)
     }
 }
 

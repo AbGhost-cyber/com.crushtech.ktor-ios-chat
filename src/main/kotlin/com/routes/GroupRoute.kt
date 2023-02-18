@@ -10,7 +10,6 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
 import org.bson.types.ObjectId
 
 
@@ -55,18 +54,18 @@ fun Route.groupRoute(chatService: ChatService) {
             }
         }
         authenticate {
-            webSocket {
+            get {
                 val principal = call.principal<JWTPrincipal>()
 
                 val userId = principal?.getClaim("userId", String::class)
-                    ?: return@webSocket sendSerialized("seems you're not authorized")
+                    ?: return@get call.respond(HttpStatusCode.Conflict, "seems you're not authorized")
 
                 val user = chatService.getUserById(ObjectId(userId))
-                    ?: return@webSocket sendSerialized("user doesn't exist")
+                    ?: return@get call.respond(HttpStatusCode.Conflict, "user doesn't exist")
 
                 val groups = chatService.getUserGroups(user.username)
                 val userGroupsDTO = groups.map { it.toGroupResponse(isAdmin = userId == it.adminId) }
-                sendSerialized(userGroupsDTO)
+                call.respond(HttpStatusCode.OK, userGroupsDTO)
             }
         }
         authenticate {

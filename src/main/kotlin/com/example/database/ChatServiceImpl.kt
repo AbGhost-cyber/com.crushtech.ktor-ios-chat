@@ -25,6 +25,7 @@ class ChatServiceImpl : ChatService {
     private val groups = database.getCollection<Group>()
     private val users = database.getCollection<User>()
     private val userIds = database.getCollection<UserIds>()
+    private val userGroupAcceptKeys = database.getCollection<GroupAccept>()
 
     override suspend fun upsertGroup(group: Group): Boolean {
         if (groupExists(group.groupId)) {
@@ -70,6 +71,19 @@ class ChatServiceImpl : ChatService {
         val user = getUserByName(username) ?: return
         val activeUser = onlineUsers.find { it.username == user.username } ?: return
         onlineUsers.minusAssign(activeUser)
+    }
+
+    override suspend fun getUserEncryptedGroupKeys(username: String): List<GroupAccept> {
+        return userGroupAcceptKeys
+            .find(GroupAccept::username eq username)
+            .toList()
+    }
+
+    override suspend fun upsertUserEncryptedGKey(key: GroupAccept): Boolean {
+        if (userGroupAcceptKeys.findOneById(key.id) == null) {
+            return userGroupAcceptKeys.insertOne(key).wasAcknowledged()
+        }
+        return userGroupAcceptKeys.updateOneById(key.id, key).wasAcknowledged()
     }
 
     override suspend fun groupExists(groupId: String): Boolean {

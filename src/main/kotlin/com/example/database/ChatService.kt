@@ -1,9 +1,6 @@
 package com.example.database
 
-import com.example.database.models.ActiveUser
-import com.example.database.models.Group
-import com.example.database.models.Message
-import com.example.database.models.User
+import com.example.database.models.*
 import org.bson.types.ObjectId
 
 
@@ -21,6 +18,8 @@ interface ChatService {
     suspend fun getUserGroups(user: String): List<Group>
 
     suspend fun getActiveUsers(): Set<ActiveUser>
+    suspend fun getUserEncryptedGroupKeys(username: String): List<GroupAccept>
+    suspend fun upsertUserEncryptedGKey(key: GroupAccept): Boolean
 
     suspend fun getIdForGroup(): Int
 
