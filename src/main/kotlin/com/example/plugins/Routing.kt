@@ -7,6 +7,7 @@ import com.example.security.token.TokenService
 import com.routes.groupRoute
 import com.routes.loginRoute
 import com.routes.signUpRoute
+import com.routes.sockets.joinGroupSocket
 import com.routes.testJwt
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
@@ -22,5 +23,6 @@ fun Application.configureRouting(
         loginRoute(chatService, hashingService, tokenService, tokenConfig)
         groupRoute(chatService)
         testJwt()
+        joinGroupSocket(chatService)
     }
 }

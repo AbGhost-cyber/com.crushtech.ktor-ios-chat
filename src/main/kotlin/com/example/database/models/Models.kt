@@ -15,7 +15,7 @@ data class Group(
     val groupDesc: String,
     val groupUrl: String,
     val dateCreated: Long,
-    val users: List<String>,
+    var users: List<String>,
     var requests: List<GroupJoinReq>,
     var messages: List<Message>,
     @BsonId val id: ObjectId = ObjectId()

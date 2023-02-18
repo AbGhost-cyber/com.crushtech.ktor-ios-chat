@@ -40,13 +40,23 @@ fun Route.joinGroupSocket(chatService: ChatService) {
                     //this might be good as a notification
                     if (group.requests.isNotEmpty()) {
                         activeUser.session.sendSerialized(
-                            "you have${group.requests.count()} new group request, check them out!"
+                            "you have ${group.requests.count()} new group request, check them out!"
                         )
                     }
                 }
                 //listen for incoming data frame
                 for (frame in incoming) {
                     val incomingRequest = converter?.deserialize<JoinGroupRequest>(frame) ?: continue
+                    val isPendingOrIsInGroup =
+                        group.requests.find { it.username == incomingRequest.username } != null || group.users.contains(
+                            incomingRequest.username
+                        )
+                    if (isPendingOrIsInGroup) return@webSocket sendSerialized(
+                        "unable to perform action because you're in the group already or you previously sent a request."
+                    )
+                    if (chatService.getUserByName(incomingRequest.username) == null || user.username != incomingRequest.username) {
+                        return@webSocket sendSerialized("username is incorrect, please try again")
+                    }
                     group.requests += incomingRequest.toDomain()
                     val wasAcknowledged = chatService.upsertGroup(group)
                     if (!wasAcknowledged) {
@@ -57,7 +67,9 @@ fun Route.joinGroupSocket(chatService: ChatService) {
                     val adminSocket = chatService.getActiveUserByName(admin.username)
                         ?: return@webSocket
 
-                    sendSerialized("request sent, please await admin response")
+                    if (activeUser.username == incomingRequest.username) {
+                        sendSerialized("request sent, please await admin response")
+                    }
 
                     adminSocket.session.sendSerialized(
                         "${incomingRequest.username} want's to join your group"

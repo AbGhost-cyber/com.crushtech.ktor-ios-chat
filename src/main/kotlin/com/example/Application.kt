@@ -34,7 +34,7 @@ fun Application.module() {
     configureContentNegotiation()
     configureSerialization()
     configureSecurity(tokenConfig)
-    configureRouting(chatService, hashingService, tokenConfig, tokenService)
     configureSockets()
+    configureRouting(chatService, hashingService, tokenConfig, tokenService)
     configureMonitoring()
 }
