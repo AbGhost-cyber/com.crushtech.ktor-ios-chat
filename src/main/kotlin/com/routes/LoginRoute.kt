@@ -2,7 +2,6 @@ package com.routes
 
 import com.example.database.ChatService
 import com.example.database.models.request.AuthRequest
-import com.example.database.models.response.AuthResponse
 import com.example.security.hashing.HashingService
 import com.example.security.hashing.SaltedHash
 import com.example.security.token.TokenClaim
@@ -23,7 +22,7 @@ fun Route.loginRoute(
     post("/login") {
         val request = kotlin.runCatching { call.receiveNullable<AuthRequest>() }.getOrNull()
             ?: kotlin.run {
-                call.respond(HttpStatusCode.BadRequest)
+                call.respond(HttpStatusCode.BadRequest, "bad data format!")
                 return@post
             }
         val user = chatService.getUserByName(request.username)
@@ -44,6 +43,6 @@ fun Route.loginRoute(
             config = tokenConfig,
             TokenClaim(name = "userId", value = user.id.toString())
         )
-        call.respond(HttpStatusCode.OK, message = AuthResponse(token))
+        call.respond(HttpStatusCode.OK, message = token)
     }
 }

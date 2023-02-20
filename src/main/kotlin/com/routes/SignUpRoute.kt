@@ -16,13 +16,13 @@ fun Route.signUpRoute(
 ) {
     post("/signup") {
         val request = kotlin.runCatching { call.receiveNullable<AuthRequest>() }.getOrNull() ?: kotlin.run {
-            call.respond(HttpStatusCode.BadRequest)
+            call.respond(HttpStatusCode.BadRequest, "bad data format!")
             return@post
         }
         val areFieldsBlank = request.username.isBlank() || request.password.isBlank()
-        val isPwTooShort = request.password.length < 8
+        val isPwTooShort = request.password.length < 6
         if (areFieldsBlank || isPwTooShort) {
-            call.respond(HttpStatusCode.Conflict)
+            call.respond(HttpStatusCode.Conflict, "password is too short")
             return@post
         }
         val saltedHash = hashingService.generateSaltedHash(request.password)
@@ -33,7 +33,7 @@ fun Route.signUpRoute(
         )
         val wasAcknowledged = chatService.register(user)
         if (!wasAcknowledged) {
-            call.respond(HttpStatusCode.Conflict)
+            call.respond(HttpStatusCode.Conflict, "Couldn't sign up at this moment, please try again later")
             return@post
         }
         call.respond(HttpStatusCode.OK, "registration successful")
