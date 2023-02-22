@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 data class GroupResponse(
     val adminId: String,
     val groupId: String,
+    val groupIcon: String,
     val groupName: String,
     val groupDesc: String,
     val groupUrl: String,

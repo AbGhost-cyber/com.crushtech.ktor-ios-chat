@@ -33,6 +33,7 @@ fun Route.groupRoute(chatService: ChatService) {
                 val newGroup = Group(
                     adminId = userId,
                     groupId = groupId.toString(),
+                    groupIcon = request.groupIcon,
                     groupName = request.groupName,
                     groupUrl = groupUrl,
                     groupDesc = request.groupDesc,

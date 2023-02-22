@@ -12,6 +12,7 @@ import org.bson.types.ObjectId
 data class Group(
     val adminId: String,
     val groupId: String,
+    var groupIcon: String,
     val groupName: String,
     val groupDesc: String,
     val groupUrl: String,
@@ -26,6 +27,7 @@ data class Group(
             adminId = this.adminId,
             groupId = this.groupId,
             groupName = this.groupName,
+            groupIcon = this.groupIcon,
             groupDesc = this.groupDesc,
             groupUrl = this.groupUrl,
             dateCreated = this.dateCreated,

@@ -31,6 +31,9 @@ fun Route.signUpRoute(
             password = saltedHash.hash,
             salt = saltedHash.salt
         )
+        if (chatService.getUserByName(request.username) != null) {
+            return@post call.respond(HttpStatusCode.Conflict, "Username already taken, please use another")
+        }
         val wasAcknowledged = chatService.register(user)
         if (!wasAcknowledged) {
             call.respond(HttpStatusCode.Conflict, "Couldn't sign up at this moment, please try again later")

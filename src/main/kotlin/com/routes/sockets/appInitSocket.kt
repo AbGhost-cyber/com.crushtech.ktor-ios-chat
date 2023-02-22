@@ -14,7 +14,7 @@ import org.bson.types.ObjectId
 
 fun Route.appInitSocket(chatService: ChatService) {
     authenticate {
-        webSocket("connect") {
+        webSocket("/connect") {
             val principal = call.principal<JWTPrincipal>()
             val userId = principal?.getClaim("userId", String::class)
                 ?: return@webSocket call.respond(HttpStatusCode.BadRequest)
@@ -25,6 +25,7 @@ fun Route.appInitSocket(chatService: ChatService) {
 
             try {
                 chatService.addUserToActive(activeUser)
+                println("added")
                 if (activeUser.session.isActive) {
                     sendSerialized("welcome back online ${activeUser.username}!")
                 }
