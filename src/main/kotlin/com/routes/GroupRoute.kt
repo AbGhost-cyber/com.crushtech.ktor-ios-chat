@@ -82,13 +82,11 @@ fun Route.groupRoute(chatService: ChatService) {
                 val groupId = call.parameters["id"]
                     ?: return@get call.respond(HttpStatusCode.Conflict, "no group id provided")
 
-                if (!chatService.groupExists(groupId)) {
-                    return@get call.respond(HttpStatusCode.Conflict, "group is invalid")
-                }
                 val group = chatService.getGroupById(groupId)
                     ?: return@get call.respond(HttpStatusCode.Conflict, "group is invalid")
 
                 val userIsGroupMember = group.users.contains(user.username)
+
 
                 if (userIsGroupMember) {
                     return@get call.respond(

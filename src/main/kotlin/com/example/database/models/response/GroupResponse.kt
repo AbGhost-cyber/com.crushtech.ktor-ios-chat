@@ -5,7 +5,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class GroupResponse(
-    val adminId: String,
     val groupId: String,
     val groupIcon: String,
     val groupName: String,
@@ -14,6 +13,6 @@ data class GroupResponse(
     val dateCreated: Long,
     val users: List<String> = listOf(),
     var requests: List<JoinGroupRequest> = listOf(),
-    val messages: List<MessageDTO> = listOf(),
+    val messages: List<OutGoingMessage> = listOf(),
     val id: String
 )

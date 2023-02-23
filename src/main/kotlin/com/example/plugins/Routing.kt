@@ -5,7 +5,8 @@ import com.example.security.hashing.HashingService
 import com.example.security.token.TokenConfig
 import com.example.security.token.TokenService
 import com.routes.*
-import com.routes.sockets.appInitSocket
+import com.routes.sockets.groupChatSocket
+import com.routes.sockets.serverSocket
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 
@@ -16,12 +17,13 @@ fun Application.configureRouting(
     tokenService: TokenService
 ) {
     routing {
-        appInitSocket(chatService)
+        serverSocket(chatService)
         signUpRoute(hashingService, chatService)
         loginRoute(chatService, hashingService, tokenService, tokenConfig)
         groupRoute(chatService)
         testJwt()
         joinGroupRoute(chatService)
         adminAcceptUserRoute(chatService)
+        groupChatSocket(chatService)
     }
 }

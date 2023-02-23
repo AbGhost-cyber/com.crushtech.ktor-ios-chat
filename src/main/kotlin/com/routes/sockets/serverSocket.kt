@@ -12,7 +12,7 @@ import kotlinx.coroutines.isActive
 import org.bson.types.ObjectId
 
 
-fun Route.appInitSocket(chatService: ChatService) {
+fun Route.serverSocket(chatService: ChatService) {
     authenticate {
         webSocket("/connect") {
             val principal = call.principal<JWTPrincipal>()

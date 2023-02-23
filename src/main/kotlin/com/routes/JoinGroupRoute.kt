@@ -42,18 +42,12 @@ fun Route.joinGroupRoute(chatService: ChatService) {
                 val request = kotlin.runCatching { call.receiveNullable<JoinGroupRequest>() }.getOrNull()
                     ?: kotlin.run { return@post call.respond(HttpStatusCode.BadRequest) }
 
-                if (user.username != request.username) {
-                    return@post call.respond(HttpStatusCode.Conflict, "username is incorrect, please try again")
-                }
-                val isPendingOrIsInGroup =
-                    group.requests.find { it.username == request.username } != null || group.users.contains(
-                        request.username
-                    )
+                val isPendingOrIsInGroup = group.requests.find { it.username == user.username } != null
                 if (isPendingOrIsInGroup) return@post call.respond(
                     HttpStatusCode.Conflict,
                     "unable to perform action because you're in the group already or you previously sent a request."
                 )
-                group.requests += request.toDomain()
+                group.requests += request.toDomain(username = user.username)
                 val wasAcknowledged = chatService.upsertGroup(group)
                 if (!wasAcknowledged) {
                     return@post call.respond(HttpStatusCode.Conflict, "couldn't join group, please try again later")
@@ -66,7 +60,7 @@ fun Route.joinGroupRoute(chatService: ChatService) {
                 val adminSocket = chatService.getActiveUserByName(admin.username)
                     ?: return@post
                 adminSocket.session.sendSerialized(
-                    WebSocketResponse.NotificationResponse("${request.username} want's to join your group")
+                    WebSocketResponse.NotificationResponse("${user.username} want's to join your group")
                 )
             }
             get {

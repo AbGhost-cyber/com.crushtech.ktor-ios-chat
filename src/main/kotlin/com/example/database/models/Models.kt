@@ -3,7 +3,7 @@ package com.example.database.models
 import com.example.database.models.request.GroupAcceptResponse
 import com.example.database.models.request.JoinGroupRequest
 import com.example.database.models.response.GroupResponse
-import com.example.database.models.response.MessageDTO
+import com.example.database.models.response.OutGoingMessage
 import io.ktor.server.websocket.*
 import org.bson.codecs.pojo.annotations.BsonId
 import org.bson.types.ObjectId
@@ -24,7 +24,6 @@ data class Group(
 ) {
     fun toGroupResponse(isAdmin: Boolean): GroupResponse {
         return GroupResponse(
-            adminId = this.adminId,
             groupId = this.groupId,
             groupName = this.groupName,
             groupIcon = this.groupIcon,
@@ -45,9 +44,7 @@ data class GroupJoinReq(
     @BsonId val id: ObjectId = ObjectId()
 ) {
     fun toJoinGroupDTO(): JoinGroupRequest {
-        return JoinGroupRequest(
-            username, publicKey
-        )
+        return JoinGroupRequest(publicKey)
     }
 }
 
@@ -74,8 +71,8 @@ data class Message(
     val message: String,
     @BsonId val id: ObjectId = ObjectId()
 ) {
-    fun toDTO(): MessageDTO {
-        return MessageDTO(name, message, id.toString())
+    fun toDTO(): OutGoingMessage {
+        return OutGoingMessage(name, message, id.toString())
     }
 }
 
