@@ -16,7 +16,7 @@ class ChatServiceImpl : ChatService {
     private val client = KMongo.createClient().coroutine
 
     //this field holds all online users
-    private var onlineUsers = Collections.synchronizedSet<ActiveUser?>(LinkedHashSet())
+    private val onlineUsers = Collections.synchronizedSet<ActiveUser?>(LinkedHashSet())
 
     //databases
     private val database = client.getDatabase("chat_db")
@@ -45,9 +45,11 @@ class ChatServiceImpl : ChatService {
     }
 
     override suspend fun addUserToActive(activeUser: ActiveUser) {
-        if (!userExist(activeUser.username)) return
-        if (onlineUsers.find { it.username == activeUser.username } == null)
-            onlineUsers.plusAssign(activeUser)
+//       if (!userExist(activeUser.username)) return
+       if (onlineUsers.find { it.username == activeUser.username } == null) {
+           removeUserFromActive(activeUser.username)
+       }
+        onlineUsers += activeUser
     }
 
     override suspend fun getActiveUserByName(username: String): ActiveUser? {
@@ -70,7 +72,7 @@ class ChatServiceImpl : ChatService {
     override suspend fun removeUserFromActive(username: String) {
         val user = getUserByName(username) ?: return
         val activeUser = onlineUsers.find { it.username == user.username } ?: return
-        onlineUsers.minusAssign(activeUser)
+        onlineUsers += activeUser
     }
 
     override suspend fun getUserEncryptedGroupKeys(username: String): List<GroupAccept> {

@@ -72,7 +72,7 @@ data class Message(
     @BsonId val id: ObjectId = ObjectId()
 ) {
     fun toDTO(): OutGoingMessage {
-        return OutGoingMessage(name, message, id.toString())
+        return OutGoingMessage(name, message)
     }
 }
 

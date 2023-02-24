@@ -10,12 +10,14 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
+import kotlinx.coroutines.isActive
 import org.bson.types.ObjectId
 import java.util.*
 
 
 fun Route.groupChatSocket(chatService: ChatService) {
     authenticate {
+        val people = Collections.synchronizedSet<ActiveUser?>(LinkedHashSet())
         webSocket("/group/{id}/chat") {
             val principal = call.principal<JWTPrincipal>()
 
@@ -31,36 +33,45 @@ fun Route.groupChatSocket(chatService: ChatService) {
             val group = chatService.getGroupById(groupId)
                 ?: return@webSocket sendSerialized(WebSocketResponse.SimpleResponse(message = "group doesn't exist!"))
 
+            if (user.username !in group.users) {
+                return@webSocket sendSerialized(WebSocketResponse.SimpleResponse(message = "you must join the group to read messages"))
+            }
+
             val activeUser = ActiveUser(user.username, session = this)
             try {
-                //doesn't matter it's a set, only new values will be added
-                sendSerialized(WebSocketResponse.SimpleResponse(message = "you're connected to ${group.groupName}"))
                 chatService.addUserToActive(activeUser)
+                //doesn't matter it's a set, only new values will be added
+                sendSerialized(WebSocketResponse.SimpleResponse(message = "you're connected"))
 
                 for (frame in incoming) {
-                    val incomingMessage = converter?.deserialize<IncomingMessage>(frame) ?: continue
-                    val msgSentUser = chatService.getUserById(ObjectId(userId))
-                        ?: return@webSocket sendSerialized("user doesn't exist")
-                    val usersInGroups = chatService.getActiveUsers().filter { it.username in group.users }
-                    val outGoingMessage = OutGoingMessage(
-                        msgSentUser.username,
-                        incomingMessage.message,
-                        UUID.randomUUID().toString()
-                    )
-                    group.messages += outGoingMessage.toDomain()
+                    (converter?.deserialize<IncomingMessage>(frame))?.let { incomingMsg ->
+                        val fetchedGroup = chatService.getGroupById(groupId)
+                            ?: return@webSocket sendSerialized(WebSocketResponse.SimpleResponse(message = "no such group!"))
+                        val usersInGroups = chatService.getActiveUsers().filter { it.username in fetchedGroup.users }
 
-                    usersInGroups.forEach {
-                        it.session.sendSerialized(
-                            WebSocketResponse.SingleGroupResponse(
-                                groupResponse = group.toGroupResponse(
-                                    isAdmin = group.adminId == msgSentUser.id.toString()
+                        val msgSentUser = chatService.getUserById(ObjectId(userId))
+                            ?: return@webSocket sendSerialized("user doesn't exist")
+                        val outGoingMessage = OutGoingMessage(msgSentUser.username, incomingMsg.message)
+                        fetchedGroup.messages += outGoingMessage.toDomain()
+                        chatService.upsertGroup(fetchedGroup)
+
+                        println("users in group: $usersInGroups")
+                        for (users in usersInGroups) {
+                            if (users.session.isActive) {
+                                val value = WebSocketResponse.SingleGroupResponse(
+                                    groupResponse = fetchedGroup.toGroupResponse(
+                                        isAdmin = fetchedGroup.adminId == msgSentUser.id.toString()
+                                    )
                                 )
-                            )
-                        )
+                                users.session.sendSerialized(value)
+                            }
+                        }
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                chatService.removeUserFromActive(activeUser.username)
             }
         }
     }
