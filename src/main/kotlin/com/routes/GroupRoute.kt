@@ -40,7 +40,8 @@ fun Route.groupRoute(chatService: ChatService) {
                     dateCreated = System.currentTimeMillis(),
                     users = listOf(admin.username),
                     requests = listOf(),
-                    messages = listOf()
+                    messages = listOf(),
+                    updatedTime = System.currentTimeMillis()
                 )
                 if (chatService.upsertGroup(newGroup)) {
                     return@post call.respond(
@@ -66,7 +67,8 @@ fun Route.groupRoute(chatService: ChatService) {
 
                 val groups = chatService.getUserGroups(user.username)
                 val userGroupsDTO = groups.map { it.toGroupResponse(isAdmin = userId == it.adminId) }
-                call.respond(HttpStatusCode.OK, userGroupsDTO)
+              //  println("sorted: ${userGroupsDTO.sortedBy { it.updatedTime }}")
+                call.respond(HttpStatusCode.OK, userGroupsDTO.sortedByDescending { it.updatedTime })
             }
         }
         authenticate {

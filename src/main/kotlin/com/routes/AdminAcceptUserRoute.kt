@@ -35,7 +35,7 @@ fun Route.adminAcceptUserRoute(chatService: ChatService) {
             val group = chatService.getGroupById(groupId)
                 ?: return@post call.respond(HttpStatusCode.Conflict, "No such group")
 
-            chatService.getUserByName(userToBeAdded)
+            val otherUser = chatService.getUserByName(userToBeAdded)
                 ?: return@post call.respond(HttpStatusCode.Conflict, "user doesn't exist")
 
             if (group.adminId != userId) return@post call.respond(
@@ -53,10 +53,6 @@ fun Route.adminAcceptUserRoute(chatService: ChatService) {
             group.users += userJoinReq.username
             chatService.upsertGroup(group)
 
-            //update user's groups if user is online
-            val getAddedUserGroups = chatService.getUserGroups(userToBeAdded).map {
-                it.toGroupResponse(it.adminId == userId)
-            }
             //persist admin encrypted response in user's collection, it can't be decrypted by anyone except the user
             chatService.upsertUserEncryptedGKey(credentials.toDomain())
             //success
@@ -71,7 +67,11 @@ fun Route.adminAcceptUserRoute(chatService: ChatService) {
             //update user's groups
             activeUser.session.sendSerialized(
                 WebSocketResponse
-                    .ListGroupResponse(groupList = getAddedUserGroups)
+                    .SingleGroupResponse(
+                        groupResponse = group.toGroupResponse(
+                            isAdmin = group.adminId == otherUser.id.toString()
+                        )
+                    )
             )
         }
     }

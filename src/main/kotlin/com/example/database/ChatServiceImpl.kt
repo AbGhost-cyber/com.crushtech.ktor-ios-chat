@@ -45,7 +45,6 @@ class ChatServiceImpl : ChatService {
     }
 
     override suspend fun addUserToActive(activeUser: ActiveUser) {
-//       if (!userExist(activeUser.username)) return
        if (onlineUsers.find { it.username == activeUser.username } == null) {
            removeUserFromActive(activeUser.username)
        }

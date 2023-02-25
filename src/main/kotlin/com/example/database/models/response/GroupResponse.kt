@@ -11,8 +11,9 @@ data class GroupResponse(
     val groupDesc: String,
     val groupUrl: String,
     val dateCreated: Long,
-    val users: List<String> = listOf(),
-    var requests: List<JoinGroupRequest> = listOf(),
-    val messages: List<OutGoingMessage> = listOf(),
+    val users: List<String>,
+    var requests: List<JoinGroupRequest>,
+    val messages: List<OutGoingMessage>,
+    val updatedTime: Long,
     val id: String
 )

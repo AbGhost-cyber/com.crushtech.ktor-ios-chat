@@ -22,17 +22,13 @@ sealed class WebSocketResponse<T>(
         WebSocketResponse<GroupResponse>(type = 1, data = groupResponse)
 
     @Serializable
-    data class ListGroupResponse(@Transient val groupList: List<GroupResponse> = listOf()) :
-        WebSocketResponse<List<GroupResponse>>(type = 2, data = groupList)
-
-    @Serializable
-    data class SimpleResponse(@Transient val message: String = "") : WebSocketResponse<String>(type = 3, data = message)
+    data class SimpleResponse(@Transient val message: String = "") : WebSocketResponse<String>(type = 2, data = message)
 
     @Serializable
     data class UserJoinAcceptAdmin(@Transient val accept: GroupAcceptResponse? = null) :
-        WebSocketResponse<GroupAcceptResponse>(type = 4, data = accept)
+        WebSocketResponse<GroupAcceptResponse>(type = 3, data = accept)
 
     @Serializable
     data class GroupJoinResponseUser(@Transient val request: JoinGroupRequest? = null) :
-        WebSocketResponse<JoinGroupRequest>(type = 5, data = request)
+        WebSocketResponse<JoinGroupRequest>(type = 4, data = request)
 }

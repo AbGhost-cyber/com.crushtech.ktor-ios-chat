@@ -20,6 +20,7 @@ data class Group(
     var users: List<String>,
     var requests: List<GroupJoinReq>,
     var messages: List<Message>,
+    var updatedTime: Long,
     @BsonId val id: ObjectId = ObjectId()
 ) {
     fun toGroupResponse(isAdmin: Boolean): GroupResponse {
@@ -31,8 +32,9 @@ data class Group(
             groupUrl = this.groupUrl,
             dateCreated = this.dateCreated,
             users = this.users,
-            requests = if (isAdmin) this.requests.map { it.toJoinGroupDTO() } else listOf(),
+            requests = if (isAdmin) this.requests.map { it.toJoinGroupDTO() } else emptyList(),
             messages = this.messages.map { it.toDTO() },
+            updatedTime = this.updatedTime,
             id = this.id.toString()
         )
     }

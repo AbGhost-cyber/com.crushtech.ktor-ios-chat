@@ -53,6 +53,7 @@ fun Route.groupChatSocket(chatService: ChatService) {
                             ?: return@webSocket sendSerialized("user doesn't exist")
                         val outGoingMessage = OutGoingMessage(msgSentUser.username, incomingMsg.message)
                         fetchedGroup.messages += outGoingMessage.toDomain()
+                        fetchedGroup.updatedTime = System.currentTimeMillis()
                         chatService.upsertGroup(fetchedGroup)
 
                         println("users in group: $usersInGroups")
@@ -60,7 +61,7 @@ fun Route.groupChatSocket(chatService: ChatService) {
                             if (users.session.isActive) {
                                 val value = WebSocketResponse.SingleGroupResponse(
                                     groupResponse = fetchedGroup.toGroupResponse(
-                                        isAdmin = fetchedGroup.adminId == msgSentUser.id.toString()
+                                        isAdmin = fetchedGroup.adminId == userId
                                     )
                                 )
                                 users.session.sendSerialized(value)
