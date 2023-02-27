@@ -17,4 +17,4 @@ data class OutGoingMessage(
 }
 
 @Serializable
-data class IncomingMessage(val message: String)
+data class IncomingMessage(val message: String, val groupId: String)

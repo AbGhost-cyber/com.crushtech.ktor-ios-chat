@@ -46,7 +46,7 @@ fun Route.groupRoute(chatService: ChatService) {
                 if (chatService.upsertGroup(newGroup)) {
                     return@post call.respond(
                         HttpStatusCode.Created,
-                        "group was successfully created"
+                        newGroup.toGroupResponse(isAdmin = true)
                     )
                 }
                 return@post call.respond(
@@ -67,7 +67,7 @@ fun Route.groupRoute(chatService: ChatService) {
 
                 val groups = chatService.getUserGroups(user.username)
                 val userGroupsDTO = groups.map { it.toGroupResponse(isAdmin = userId == it.adminId) }
-              //  println("sorted: ${userGroupsDTO.sortedBy { it.updatedTime }}")
+                //  println("sorted: ${userGroupsDTO.sortedBy { it.updatedTime }}")
                 call.respond(HttpStatusCode.OK, userGroupsDTO.sortedByDescending { it.updatedTime })
             }
         }

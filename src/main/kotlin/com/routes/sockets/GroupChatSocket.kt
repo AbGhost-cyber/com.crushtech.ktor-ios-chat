@@ -18,7 +18,7 @@ import java.util.*
 fun Route.groupChatSocket(chatService: ChatService) {
     authenticate {
         val people = Collections.synchronizedSet<ActiveUser?>(LinkedHashSet())
-        webSocket("/group/{id}/chat") {
+        webSocket("/group/chat") {
             val principal = call.principal<JWTPrincipal>()
 
             val userId = principal?.getClaim("userId", String::class)
@@ -27,15 +27,10 @@ fun Route.groupChatSocket(chatService: ChatService) {
             val user = chatService.getUserById(ObjectId(userId))
                 ?: return@webSocket sendSerialized(WebSocketResponse.SimpleResponse(message = "user doesn't exist!"))
 
-            val groupId = call.parameters["id"]
-                ?: return@webSocket sendSerialized(WebSocketResponse.SimpleResponse(message = "group id is required!"))
-
-            val group = chatService.getGroupById(groupId)
-                ?: return@webSocket sendSerialized(WebSocketResponse.SimpleResponse(message = "group doesn't exist!"))
-
-            if (user.username !in group.users) {
-                return@webSocket sendSerialized(WebSocketResponse.SimpleResponse(message = "you must join the group to read messages"))
-            }
+//            val group = chatService.getGroupById(groupId)
+//                ?: return@webSocket sendSerialized(WebSocketResponse.SimpleResponse(message = "group doesn't exist!"))
+//
+//
 
             val activeUser = ActiveUser(user.username, session = this)
             try {
@@ -45,8 +40,14 @@ fun Route.groupChatSocket(chatService: ChatService) {
 
                 for (frame in incoming) {
                     (converter?.deserialize<IncomingMessage>(frame))?.let { incomingMsg ->
-                        val fetchedGroup = chatService.getGroupById(groupId)
+
+                        val fetchedGroup = chatService.getGroupById(incomingMsg.groupId)
                             ?: return@webSocket sendSerialized(WebSocketResponse.SimpleResponse(message = "no such group!"))
+
+                        if (user.username !in fetchedGroup.users) {
+                            return@webSocket sendSerialized(WebSocketResponse.SimpleResponse(message = "you must join the group to read messages"))
+                        }
+
                         val usersInGroups = chatService.getActiveUsers().filter { it.username in fetchedGroup.users }
 
                         val msgSentUser = chatService.getUserById(ObjectId(userId))
@@ -56,7 +57,6 @@ fun Route.groupChatSocket(chatService: ChatService) {
                         fetchedGroup.updatedTime = System.currentTimeMillis()
                         chatService.upsertGroup(fetchedGroup)
 
-                        println("users in group: $usersInGroups")
                         for (users in usersInGroups) {
                             if (users.session.isActive) {
                                 val value = WebSocketResponse.SingleGroupResponse(
