@@ -27,11 +27,6 @@ fun Route.groupChatSocket(chatService: ChatService) {
             val user = chatService.getUserById(ObjectId(userId))
                 ?: return@webSocket sendSerialized(WebSocketResponse.SimpleResponse(message = "user doesn't exist!"))
 
-//            val group = chatService.getGroupById(groupId)
-//                ?: return@webSocket sendSerialized(WebSocketResponse.SimpleResponse(message = "group doesn't exist!"))
-//
-//
-
             val activeUser = ActiveUser(user.username, session = this)
             try {
                 chatService.addUserToActive(activeUser)

@@ -15,5 +15,7 @@ data class GroupResponse(
     var requests: List<JoinGroupRequest>,
     val messages: List<OutGoingMessage>,
     val updatedTime: Long,
+    val currentUserIsAdmin: Boolean,
     val id: String
 )
+

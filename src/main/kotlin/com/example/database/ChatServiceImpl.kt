@@ -114,10 +114,6 @@ class ChatServiceImpl : ChatService {
         ).toList()
     }
 
-    override suspend fun fetchMessagesForGroup(groupId: String): List<Message> {
-        TODO("Not yet implemented")
-    }
-
     override suspend fun getIdForGroup(): Int {
         val userIdList = userIds.find().toList()
         var lastId = UserIds(value = 0)

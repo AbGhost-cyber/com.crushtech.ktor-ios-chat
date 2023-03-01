@@ -4,6 +4,7 @@ import com.example.database.models.request.GroupAcceptResponse
 import com.example.database.models.request.JoinGroupRequest
 import com.example.database.models.response.GroupResponse
 import com.example.database.models.response.OutGoingMessage
+import com.example.database.models.response.SearchGroupDTO
 import io.ktor.server.websocket.*
 import org.bson.codecs.pojo.annotations.BsonId
 import org.bson.types.ObjectId
@@ -35,7 +36,19 @@ data class Group(
             requests = if (isAdmin) this.requests.map { it.toJoinGroupDTO() } else emptyList(),
             messages = this.messages.map { it.toDTO() },
             updatedTime = this.updatedTime,
+            currentUserIsAdmin = isAdmin,
             id = this.id.toString()
+        )
+    }
+
+    fun toSearchGroupDTO(): SearchGroupDTO {
+        return SearchGroupDTO(
+            groupId = this.groupId,
+            groupName = this.groupName,
+            groupIcon = this.groupIcon,
+            groupDesc = this.groupDesc,
+            groupUrl = this.groupUrl,
+            dateCreated = this.dateCreated
         )
     }
 }

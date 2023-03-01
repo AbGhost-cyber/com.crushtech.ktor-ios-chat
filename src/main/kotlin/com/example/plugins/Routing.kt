@@ -23,5 +23,6 @@ fun Application.configureRouting(
         joinGroupRoute(chatService)
         adminAcceptUserRoute(chatService)
         groupChatSocket(chatService)
+        searchGroupRoute(chatService)
     }
 }
