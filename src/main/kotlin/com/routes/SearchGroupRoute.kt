@@ -25,7 +25,7 @@ fun Route.searchGroupRoute(chatService: ChatService) {
                     ?: return@get call.respond(HttpStatusCode.Conflict, "no group id provided")
                 //TODO: scope to users groups and global search groups
                 val groups = chatService.fetchAllGroups()
-                    .filter { it.groupName.contains(keyword) }
+                    .filter { it.groupName.lowercase().contains(keyword.lowercase()) }
                 call.respond(HttpStatusCode.OK, groups.map { it.toSearchGroupDTO() })
             }
         }

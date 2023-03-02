@@ -46,9 +46,9 @@ data class Group(
             groupId = this.groupId,
             groupName = this.groupName,
             groupIcon = this.groupIcon,
-            groupDesc = this.groupDesc,
             groupUrl = this.groupUrl,
-            dateCreated = this.dateCreated
+            dateCreated = this.dateCreated,
+            users = this.users.count()
         )
     }
 }
