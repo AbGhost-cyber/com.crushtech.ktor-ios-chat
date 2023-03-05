@@ -16,18 +16,19 @@ import kotlinx.coroutines.isActive
 
 
 //would be great to send a notification, no need to notify user that the request was denied
-fun Route.adminAcceptUserRoute(chatService: ChatService) {
+fun Route.adminHandleRequestRoute(chatService: ChatService) {
     authenticate {
-        post("/group/{id}/{of}/acceptRequest") {
+        post("/group/{id}/{username}/request") {
             val groupId = call.parameters["id"] ?: return@post call.respond(
                 HttpStatusCode.BadRequest,
                 "must provide the group id"
             )
-            val userToBeAdded = call.parameters["of"]
+            val userToBeAdded = call.parameters["username"]
                 ?: return@post call.respond(HttpStatusCode.BadRequest, "username to be added must not be empty")
 
-            val credentials = kotlin.runCatching { call.receiveNullable<GroupAcceptResponse>() }.getOrNull()
-                ?: kotlin.run { return@post call.respond(HttpStatusCode.BadRequest, "must have credentials") }
+            val action = call.request.queryParameters["action"]
+                ?: return@post call.respond(HttpStatusCode.Conflict, "Action must be specified")
+
 
             val principal = call.principal<JWTPrincipal>()
 
@@ -36,9 +37,6 @@ fun Route.adminAcceptUserRoute(chatService: ChatService) {
 
             val group = chatService.getGroupById(groupId)
                 ?: return@post call.respond(HttpStatusCode.Conflict, "No such group")
-
-            val otherUser = chatService.getUserByName(userToBeAdded)
-                ?: return@post call.respond(HttpStatusCode.Conflict, "user doesn't exist")
 
             if (group.adminId != userId) return@post call.respond(
                 HttpStatusCode.Conflict, "only an admin can perform this action"
@@ -51,6 +49,25 @@ fun Route.adminAcceptUserRoute(chatService: ChatService) {
             val userJoinReq = group.requests.find { it.username == userToBeAdded }
                 ?: return@post call.respond(HttpStatusCode.Conflict, "this user never sent a group join request")
 
+            val validActions = listOf("accept", "reject")
+
+            if (action !in validActions) {
+                return@post call.respond(HttpStatusCode.Conflict, "invalid action")
+            }
+            if (action == validActions[1]) {
+                group.requests -= userJoinReq
+                chatService.upsertGroup(group)
+                //return updated group request list
+               return@post call.respond(HttpStatusCode.OK, group.requests.map { it.toJoinGroupDTO() })
+            }
+
+            //need credentials to accept
+            val credentials = kotlin.runCatching { call.receiveNullable<GroupAcceptResponse>() }.getOrNull()
+                ?: kotlin.run { return@post call.respond(HttpStatusCode.BadRequest, "must have credentials") }
+
+            //user to be accepted
+            val otherUser = chatService.getUserByName(userToBeAdded)
+                ?: return@post call.respond(HttpStatusCode.Conflict, "user doesn't exist")
             group.requests -= userJoinReq
             group.users += userJoinReq.username
             val outGoingMessage = OutGoingMessage("", "${userJoinReq.username} was added to the group by admin")
@@ -76,7 +93,7 @@ fun Route.adminAcceptUserRoute(chatService: ChatService) {
             //persist admin encrypted response in user's collection, it can't be decrypted by anyone except the user
             chatService.upsertUserEncryptedGKey(credentials.toDomain())
             //success
-            call.respond(HttpStatusCode.OK, "User added to group")
+            call.respond(HttpStatusCode.OK, group.requests.map { it.toJoinGroupDTO() })
 
             val activeUser = chatService.getActiveUserByName(userToBeAdded) ?: return@post
             //send group secret to user

@@ -41,6 +41,7 @@ fun Route.groupRoute(chatService: ChatService) {
                     users = listOf(admin.username),
                     requests = listOf(),
                     messages = listOf(),
+                    adminName = admin.username,
                     updatedTime = System.currentTimeMillis()
                 )
                 if (chatService.upsertGroup(newGroup)) {

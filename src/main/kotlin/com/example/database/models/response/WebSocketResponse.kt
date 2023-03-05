@@ -1,7 +1,6 @@
 package com.example.database.models.response
 
 import com.example.database.models.request.GroupAcceptResponse
-import com.example.database.models.request.JoinGroupRequest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
@@ -28,7 +27,7 @@ sealed class WebSocketResponse<T>(
     data class UserJoinAcceptAdmin(@Transient val accept: GroupAcceptResponse? = null) :
         WebSocketResponse<GroupAcceptResponse>(type = 3, data = accept)
 
-    @Serializable
-    data class GroupJoinResponseUser(@Transient val request: JoinGroupRequest? = null) :
-        WebSocketResponse<JoinGroupRequest>(type = 4, data = request)
+//    @Serializable
+//    data class GroupJoinResponseUser(@Transient val request: JoinGroupRequest? = null) :
+//        WebSocketResponse<JoinGroupRequest>(type = 4, data = request)
 }

@@ -19,9 +19,9 @@ fun Application.configureRouting(
         signUpRoute(hashingService, chatService)
         loginRoute(chatService, hashingService, tokenService, tokenConfig)
         groupRoute(chatService)
-        testJwt()
+        fetchGroupCred(chatService)
         joinGroupRoute(chatService)
-        adminAcceptUserRoute(chatService)
+        adminHandleRequestRoute(chatService)
         groupChatSocket(chatService)
         searchGroupRoute(chatService)
     }

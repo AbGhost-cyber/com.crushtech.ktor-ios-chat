@@ -24,6 +24,8 @@ interface ChatService {
     suspend fun getUserEncryptedGroupKeys(username: String): List<GroupAccept>
     suspend fun upsertUserEncryptedGKey(key: GroupAccept): Boolean
 
+    suspend fun deleteUserEncryptedGroupKey(groupId: String)
+
     suspend fun getIdForGroup(): Int
 
     suspend fun addUserToActive(activeUser: ActiveUser)

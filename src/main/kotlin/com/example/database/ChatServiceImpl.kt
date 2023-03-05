@@ -45,9 +45,9 @@ class ChatServiceImpl : ChatService {
     }
 
     override suspend fun addUserToActive(activeUser: ActiveUser) {
-       if (onlineUsers.find { it.username == activeUser.username } == null) {
-           removeUserFromActive(activeUser.username)
-       }
+        if (onlineUsers.find { it.username == activeUser.username } == null) {
+            removeUserFromActive(activeUser.username)
+        }
         onlineUsers += activeUser
     }
 
@@ -75,9 +75,13 @@ class ChatServiceImpl : ChatService {
     }
 
     override suspend fun getUserEncryptedGroupKeys(username: String): List<GroupAccept> {
-        return userGroupAcceptKeys
-            .find(GroupAccept::username eq username)
-            .toList()
+        return userGroupAcceptKeys.find(GroupAccept::username eq username).toList()
+    }
+
+    override suspend fun deleteUserEncryptedGroupKey(groupId: String) {
+        userGroupAcceptKeys.deleteOne(
+            GroupAccept::groupId eq groupId
+        ).wasAcknowledged()
     }
 
     override suspend fun upsertUserEncryptedGKey(key: GroupAccept): Boolean {

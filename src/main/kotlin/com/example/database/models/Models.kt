@@ -1,7 +1,7 @@
 package com.example.database.models
 
 import com.example.database.models.request.GroupAcceptResponse
-import com.example.database.models.request.JoinGroupRequest
+import com.example.database.models.request.JoinGroupRequestOutGoing
 import com.example.database.models.response.GroupResponse
 import com.example.database.models.response.OutGoingMessage
 import com.example.database.models.response.SearchGroupDTO
@@ -18,6 +18,7 @@ data class Group(
     val groupDesc: String,
     val groupUrl: String,
     val dateCreated: Long,
+    val adminName: String,
     var users: List<String>,
     var requests: List<GroupJoinReq>,
     var messages: List<Message>,
@@ -37,6 +38,7 @@ data class Group(
             messages = this.messages.map { it.toDTO() },
             updatedTime = this.updatedTime,
             currentUserIsAdmin = isAdmin,
+            adminName = this.adminName,
             id = this.id.toString()
         )
     }
@@ -58,8 +60,8 @@ data class GroupJoinReq(
     val publicKey: List<Int>,
     @BsonId val id: ObjectId = ObjectId()
 ) {
-    fun toJoinGroupDTO(): JoinGroupRequest {
-        return JoinGroupRequest(publicKey)
+    fun toJoinGroupDTO(): JoinGroupRequestOutGoing {
+        return JoinGroupRequestOutGoing(publicKey, username)
     }
 }
 

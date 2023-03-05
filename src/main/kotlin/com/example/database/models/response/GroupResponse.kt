@@ -1,6 +1,6 @@
 package com.example.database.models.response
 
-import com.example.database.models.request.JoinGroupRequest
+import com.example.database.models.request.JoinGroupRequestOutGoing
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -12,9 +12,10 @@ data class GroupResponse(
     val groupUrl: String,
     val dateCreated: Long,
     val users: List<String>,
-    var requests: List<JoinGroupRequest>,
+    var requests: List<JoinGroupRequestOutGoing>,
     val messages: List<OutGoingMessage>,
     val updatedTime: Long,
+    val adminName: String,
     val currentUserIsAdmin: Boolean,
     val id: String
 )
