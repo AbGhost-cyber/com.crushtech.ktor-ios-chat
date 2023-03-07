@@ -5,6 +5,7 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.bson.types.ObjectId
@@ -23,20 +24,29 @@ fun Route.fetchGroupCred(chatService: ChatService) {
                     ?: return@get call.respond(HttpStatusCode.Conflict, "user doesn't exist")
 
                 val credentials = chatService.getUserEncryptedGroupKeys(user.username)
-                val userGroups = chatService.getUserGroups(user.username)
-                val userGroupIds =  userGroups.map { group -> group.groupId }
-                val requestGroupIds = credentials.map { it.groupId }
-                val commonIds = userGroupIds.intersect(requestGroupIds.toSet())
+                call.respond(HttpStatusCode.OK, credentials.map { it.toDTO() })
+            }
+        }
+        route("/deleteGroupCred") {
+            post {
+                val principal = call.principal<JWTPrincipal>()
 
-                //delete credential if user has joined group
-                if(commonIds.isNotEmpty()) {
-                    commonIds.forEach { id->
-                        chatService.deleteUserEncryptedGroupKey(groupId = id)
-                    }
+                val userId = principal?.getClaim("userId", String::class)
+                    ?: return@post call.respond(HttpStatusCode.Conflict, "seems you're not authorized")
+
+                val user = chatService.getUserById(ObjectId(userId))
+                    ?: return@post call.respond(HttpStatusCode.Conflict, "user doesn't exist")
+
+                val request = kotlin.runCatching { call.receiveNullable<List<String>>() }.getOrNull()
+                    ?: kotlin.run { return@post call.respond(HttpStatusCode.BadRequest) }
+
+                val credentials = chatService.getUserEncryptedGroupKeys(user.username)
+                    .filter { it.groupId in request }
+
+                for (credential in credentials) {
+                    chatService.deleteUserEncryptedGroupKey(credential.groupId)
                 }
-                val credentialsToSend = chatService.getUserEncryptedGroupKeys(user.username)
-                    .map { it.toDTO() }
-                call.respond(HttpStatusCode.OK, credentialsToSend)
+                call.respond(HttpStatusCode.OK, "cleared credentials")
             }
         }
     }

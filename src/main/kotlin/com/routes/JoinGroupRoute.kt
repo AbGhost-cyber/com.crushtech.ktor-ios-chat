@@ -3,6 +3,7 @@ package com.routes
 import com.example.database.ChatService
 import com.example.database.models.request.JoinGroupRequestIncoming
 import com.example.database.models.request.JoinGroupRequestOutGoing
+import com.example.database.models.response.WebSocketResponse
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -10,6 +11,7 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.websocket.*
 import org.bson.types.ObjectId
 
 
@@ -49,6 +51,14 @@ fun Route.joinGroupRoute(chatService: ChatService) {
                     return@post call.respond(HttpStatusCode.Conflict, "couldn't join group, please try again later")
                 }
                 call.respond(HttpStatusCode.OK, "request sent, you'll be notified if accepted")
+
+                val adminSocket = chatService.getActiveUserByName(group.adminName)
+                    ?: return@post
+                adminSocket.session.sendSerialized(
+                    WebSocketResponse.SingleGroupResponse(
+                        groupResponse = group.toGroupResponse(isAdmin = true)
+                    )
+                )
             }
         }
     }

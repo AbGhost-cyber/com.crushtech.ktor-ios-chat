@@ -2,7 +2,6 @@ package com.routes
 
 import com.example.database.ChatService
 import com.example.database.models.request.GroupAcceptResponse
-import com.example.database.models.response.OutGoingMessage
 import com.example.database.models.response.WebSocketResponse
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -12,7 +11,6 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
-import kotlinx.coroutines.isActive
 
 
 //would be great to send a notification, no need to notify user that the request was denied
@@ -69,25 +67,11 @@ fun Route.adminHandleRequestRoute(chatService: ChatService) {
             val otherUser = chatService.getUserByName(userToBeAdded)
                 ?: return@post call.respond(HttpStatusCode.Conflict, "user doesn't exist")
             group.requests -= userJoinReq
-            group.users += userJoinReq.username
-            val outGoingMessage = OutGoingMessage("", "${userJoinReq.username} was added to the group by admin")
-            group.messages += outGoingMessage.toDomain()
+            group.users += otherUser.username
+//            val outGoingMessage = OutGoingMessage("", "${userJoinReq.username} was added to the group by admin")
+//            group.messages += outGoingMessage.toDomain()
             group.updatedTime = System.currentTimeMillis()
             chatService.upsertGroup(group)
-
-            val usersInGroups = chatService.getActiveUsers().filter { it.username in group.users }
-
-            for (user in usersInGroups) {
-                val localUser = chatService.getUserByName(user.username) ?: continue
-                if (user.session.isActive) {
-                    val value = WebSocketResponse.SingleGroupResponse(
-                        groupResponse = group.toGroupResponse(
-                            isAdmin = group.adminId == localUser.id.toString()
-                        )
-                    )
-                    user.session.sendSerialized(value)
-                }
-            }
 
 
             //persist admin encrypted response in user's collection, it can't be decrypted by anyone except the user
@@ -101,15 +85,19 @@ fun Route.adminHandleRequestRoute(chatService: ChatService) {
                 WebSocketResponse
                     .UserJoinAcceptAdmin(accept = credentials)
             )
-            //update user's groups
-            activeUser.session.sendSerialized(
-                WebSocketResponse
-                    .SingleGroupResponse(
-                        groupResponse = group.toGroupResponse(
-                            isAdmin = group.adminId == otherUser.id.toString()
-                        )
+
+
+            val usersInGroups = chatService.getActiveUsers().filter { it.username in group.users }
+
+            for (user in usersInGroups) {
+                val localUser = chatService.getUserByName(user.username) ?: continue
+                val value = WebSocketResponse.SingleGroupResponse(
+                    groupResponse = group.toGroupResponse(
+                        isAdmin = group.adminId == localUser.id.toString()
                     )
-            )
+                )
+                user.session.sendSerialized(value)
+            }
         }
     }
 }

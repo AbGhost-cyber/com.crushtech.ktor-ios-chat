@@ -47,7 +47,8 @@ fun Route.groupChatSocket(chatService: ChatService) {
 
                         val msgSentUser = chatService.getUserById(ObjectId(userId))
                             ?: return@webSocket sendSerialized("user doesn't exist")
-                        val outGoingMessage = OutGoingMessage(msgSentUser.username, incomingMsg.message)
+                        val name = if (incomingMsg.isNotification) "" else msgSentUser.username
+                        val outGoingMessage = OutGoingMessage(name, incomingMsg.message)
                         fetchedGroup.messages += outGoingMessage.toDomain()
                         fetchedGroup.updatedTime = System.currentTimeMillis()
                         chatService.upsertGroup(fetchedGroup)
